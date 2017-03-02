@@ -67,7 +67,6 @@ Command options:
     -i <source-image>     Source image which copied to local storage account
     -f <template-file>    Azure template file
     -e <parameter-file>   Azure parameter file
-    --no-nat-vm           Deploy vSRX without frontend NAT VM
     -h --help             Get help information
 ```
 
@@ -75,12 +74,6 @@ Example of deploy vSRX with a front-end NAT VM:
 
 ```
 # ./deploy-azure-vsrx.sh -g juniper -i  https://jnprvsrx.blob.core.windows.net/vsrx/media-vsrx-vmdisk-151X49D80.vhd
-```
-
-Example of deploy vSRX WITHOUT a front-end NAT VM:
-
-```
-# ./deploy-azure-vsrx.sh --no-nat-vm -l westcentralus -g juniper -i https://jnprvsrx.blob.core.windows.net/vsrx/media-vsrx-vmdisk-151X49D80.vhd
 ```
 
 ### Configure NAT VM

@@ -16,7 +16,6 @@ Command options:
     -i <source-image>      Source image which copied to local storage account
     -f <template-file>     Azure template file
     -e <parameter-file>    Azure parameter file
-    --no-nat-vm            Deploy vSRX without frontend NAT VM
     -h --help              Get help information
 eof
 }
