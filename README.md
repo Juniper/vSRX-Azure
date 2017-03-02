@@ -22,14 +22,14 @@ With the limitation of Azure cloud implementation, a VM can only assoicate one p
 
 ```
 internet 
-       +
-       |
-       |                          (mgt-subnet)
-       +-----------------------------vnet------------------------------------------+
-       |                              |                                            |
-       |                             fxp0                                          |
-       |                              |                                            |
-     eth0     eth1           ge-0/0/0 |  ge-0/0/1                         eth1    eth0
+      +
+      |
+      |                        (mgt-subnet)
+      +-----------------------------vnet-----------------------------------------+
+      |                              |                                           |
+      |                             fxp0                                         |
+      |                             |                                            |
+     eth0   eth1           ge-0/0/0 |  ge-0/0/1                         eth1    eth0
      vm-nat <-----> vnet <-------> vsrx-vpn-gw <---------> vnet <---------> app-vm-in-vpn
                 (untrust-subnet)                        (trust-subnet)
 
