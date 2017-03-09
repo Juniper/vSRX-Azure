@@ -70,7 +70,7 @@ Command options:
     -h --help             Get help information
 ```
 
-Example of deploy vSRX with a front-end NAT VM:
+If -l, -f and -e are not specified, they will use "westus", template file "templates/vsrx-with-nat-vm/vsrx.json" and parameter file "templates/vsrx-with-nat-vm/vsrx.parameters.json" by default. Example of deploy vSRX with a front-end NAT VM:
 
 ```
 # ./deploy-azure-vsrx.sh -g juniper -i  https://jnprvsrx.blob.core.windows.net/vsrx/media-vsrx-vmdisk-151X49D80.vhd
