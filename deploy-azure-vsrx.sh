@@ -4,6 +4,8 @@ prog_name="$0"
 location="westus"
 tmp_parameter_file="/tmp/$$.azure.param.json"
 deploy_nat_vm=1
+template_file="./templates/vsrx-with-nat-vm/vsrx.json"
+parameter_file="./templates/vsrx-with-nat-vm/vsrx.parameters.json"
 
 usage()
 {
@@ -60,15 +62,6 @@ do
     esac
     shift
 done
-
-if [ "$deploy_nat_vm" -eq 0 ]
-then
-    template_file="./templates/vsrx-no-nat-vm/vsrx.json"
-    parameter_file="./templates/vsrx-no-nat-vm/vsrx.parameters.json"
-else
-    template_file="./templates/vsrx-with-nat-vm/vsrx.json"
-    parameter_file="./templates/vsrx-with-nat-vm/vsrx.parameters.json"   
-fi
 
 if [ -z "$resource_group" ]
 then
