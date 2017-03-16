@@ -27,7 +27,7 @@ The paramter json file provides all the value of mandatory parameters about the 
 
 Similarly, user may execute deploy-azure-vsrx.sh without specify "--no-nat-vm" option, and the template would be applied by default.
 
-An example of deploying a complete topoloty with NAT VM:
+An example of deploying a complete topology with NAT VM:
 
 ```
 1. azure login

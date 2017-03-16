@@ -1,8 +1,8 @@
 ### Creating an APP VM in trust-subnet
 
-With the template and parameter json files, an virtual machine located in trust-subnet will be deployed. The APP VM could be managed through the public IP assigned to it.  
+With the template and parameter json files, a virtual machine located in trust-subnet will be deployed. The APP VM could be managed through the public IP assigned to it.  
 The template json file specifies all the parameters and resources of deploying an APP VM. We specify a CentOS 7 VM would be deployed in the template.  
-The paramter json file provides all the value of mandatory parameters. User could modify the value in the parameter json file.
+The parameter json file provides all the value of mandatory parameters. User could modify the value in the parameter json file.
 
 **The parameters including:**
 
@@ -18,7 +18,7 @@ The paramter json file provides all the value of mandatory parameters. User coul
 
 After executing deploy-azure-vsrx.sh, which would create storage account and resource group, user may apply the json template and parameter file to deploy the APP VM directly.
 
-**Steps of deploying the template with azure cli:**
+**Steps of deploying the template with azure CLI:**
 
 1.	azure login
 2.	azure config mode arm
