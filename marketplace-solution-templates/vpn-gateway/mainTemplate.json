@@ -1,0 +1,387 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+
+    "parameters" : {
+        "storageAccountName": {
+          "type": "string",
+          "metadata": {
+            "description": "Storage Account Name"
+          }
+        },
+        "virtualMachineSize": {
+          "type": "string",
+          "metadata": {
+            "description": "Virtual Machine Size"
+          }
+        },
+        "vsrx-name": {
+          "type": "string",
+          "metadata": {
+            "description": "vSRX Name"
+          }
+        },
+        "vsrx-addr-ge-0-0-0": {
+          "type": "string",
+          "metadata": {
+            "description": "vSRX ge-0/0/0 address"
+          }
+        },
+        "vsrx-addr-ge-0-0-1": {
+          "type": "string",
+          "metadata": {
+            "description": "vSRX ge-0/0/1 address"
+          }
+        },
+        "vsrx-username": {
+          "type": "string",
+          "metadata": {
+            "description": "vSRX user name"
+          }
+        },
+        "authenticationType": {
+            "type": "string",
+            "metadata": {
+                "descritpion": "vSRX user authentication type"
+            },
+            "defaultValue": "sshPublicKey"
+        },
+        "vsrx-password": {
+          "type": "securestring",
+	  "defaultValue": "",
+          "metadata": {
+            "description": "vSRX user password"
+          }
+        },
+        "sshKey": {
+          "type": "string",
+	  "defaultValue": "",
+          "metadata": {
+            "description": "vSRX public SSH key"
+          }
+        },
+        "vnet-prefix": {
+          "type": "string",
+          "metadata": {
+            "description": "Virtual network prefix"
+          }
+        },
+        "vnet-mgt-subnet-basename": {
+          "type": "string",
+          "metadata": {
+            "description": "Management subnet base name"
+          }
+        },
+        "vnet-mgt-subnet-prefix": {
+          "type": "string",
+          "metadata": {
+            "description": "Management subnet prefix"
+          }
+        },
+        "vnet-trust-subnet-basename": {
+          "type": "string",
+          "metadata": {
+            "description": "Trust subnet name"
+          }
+        },
+        "vnet-trust-subnet-prefix": {
+          "type": "string",
+          "metadata": {
+            "description": "Trust subnet prefix"
+          }
+        },
+        "vnet-untrust-subnet-basename": {
+          "type": "string",
+          "metadata": {
+            "description": "Untrust subnet base name"
+          }
+        },
+        "vnet-untrust-subnet-prefix": {
+          "type": "string",
+          "metadata": {
+            "description": "Untrust subnet prefix"
+          }
+        }
+    },
+
+    "variables": {
+        "location": "[resourceGroup().location]",
+        "templateBaseUrl": "https://junipernetworks.blob.core.windows.net/vsrx-templates",
+        "vsrxTemplateUrl": "[concat(variables('templateBaseUrl'), '/vSRX-', parameters('authenticationType'),'.json')]",
+        "vsrx-addr-fxp0" : "[concat(parameters('vsrx-name'), '-fxp0')]",
+        "vsrx-addr-ge000" : "[concat(parameters('vsrx-name'), '-ge-0-0-0')]",
+        "vnet-name":  "[concat('vnet-', parameters('vsrx-name'))]",
+	      "storageAccountName": "[concat(take(toLower(parameters('storageAccountName')), 11), uniqueString(resourceGroup().id, deployment().name))]",
+        "vnet-mgt-subnet-name": "[concat(variables('vnet-name'), '-', parameters('vnet-mgt-subnet-basename'))]",
+        "vnet-untrust-subnet-name": "[concat(variables('vnet-name'), '-', parameters('vnet-untrust-subnet-basename'))]",
+        "vnet-trust-subnet-name": "[concat(variables('vnet-name'), '-', parameters('vnet-trust-subnet-basename'))]",
+        "rtt-untrust": "[concat('rtt-untrust-subnet-', variables('vnet-name'))]",
+        "rtt-trust": "[concat('rtt-trust-subnet-', variables('vnet-name'))]",
+        "vsrxVM": {
+            "vmSize": "[parameters('virtualMachineSize')]",
+            "vmName": "[parameters('vsrx-name')]",
+            "pipNameFxp0": "[variables('vsrx-addr-fxp0')]",
+            "pipNameGe000": "[variables('vsrx-addr-ge000')]",
+            "mgtNicName": "[concat('if-', parameters('vsrx-name'), '-fxp0')]",
+            "untrustNicName": "[concat('if-', parameters('vsrx-name'), '-ge-0-0-0')]",
+            "untrustPrivateIP": "[parameters('vsrx-addr-ge-0-0-0')]",
+            "trustNicName": "[concat('if-', parameters('vsrx-name'), '-ge-0-0-1')]",
+            "trustPrivateIP": "[parameters('vsrx-addr-ge-0-0-1')]"
+        },
+        "vnet-id": "[resourceId('Microsoft.Network/virtualNetworks', variables('vnet-name'))]",
+        "vnet-untrust-subnet-id": "[concat(variables('vnet-id'),'/subnets/', variables('vnet-untrust-subnet-name'))]",
+        "vnet-trust-subnet-id": "[concat(variables('vnet-id'),'/subnets/', variables('vnet-trust-subnet-name'))]",
+        "vnet-mgt-subnet-id": "[concat(variables('vnet-id'),'/subnets/', variables('vnet-mgt-subnet-name'))]",
+
+        "vsrx-pip-fxp0-id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('vsrxVM').pipNameFxp0)]",
+        "vsrx-pip-ge000-id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('vsrxVM').pipNameGe000)]"
+    },
+
+    "resources": [  
+        {
+            "type": "Microsoft.Storage/storageAccounts",
+            "name": "[variables('storageAccountName')]",
+            "apiVersion": "2015-06-15",
+            "location": "[resourceGroup().location]",
+            "properties": {
+              "accountType": "Standard_LRS"
+            }
+        },
+        {
+          "type": "Microsoft.Network/publicIPAddresses",
+          "name": "[variables('vsrxVM').pipNameFxp0]",
+          "apiVersion": "2016-03-30",
+          "location": "[resourceGroup().location]",
+          "properties": {
+            "publicIPAllocationMethod": "Dynamic",
+            "dnsSettings": {
+              "domainNameLabel": "[variables('vsrxVM').pipNameFxp0]"
+            }
+          }
+        },
+        {
+          "type": "Microsoft.Network/publicIPAddresses",
+          "name": "[variables('vsrxVM').pipNameGe000]",
+          "apiVersion": "2016-03-30",
+          "location": "[resourceGroup().location]",
+          "properties": {
+            "publicIPAllocationMethod": "Dynamic",
+            "dnsSettings": {
+              "domainNameLabel": "[variables('vsrxVM').pipNameGe000]"
+            }
+          }
+        },
+        {
+           "apiVersion": "2016-03-30",
+           "type": "Microsoft.Network/virtualNetworks",
+           "name": "[variables('vnet-name')]",
+           "location": "[resourceGroup().location]",
+           "dependsOn": [
+             "[concat('Microsoft.Network/routeTables/', variables('rtt-untrust'))]",
+             "[concat('Microsoft.Network/routeTables/', variables('rtt-trust'))]"
+           ],
+           "properties": {
+             "addressSpace": {
+               "addressPrefixes": [
+                 "[parameters('vnet-prefix')]"
+               ]
+             },
+             "subnets": [
+               {
+                 "name": "[variables('vnet-mgt-subnet-name')]",
+                 "properties": {
+                     "addressPrefix": "[parameters('vnet-mgt-subnet-prefix')]"
+                 }
+               },
+               {
+                 "name": "[variables('vnet-untrust-subnet-name')]",
+                 "properties": {
+                     "addressPrefix": "[parameters('vnet-untrust-subnet-prefix')]",
+                     "routeTable": {
+                         "id": "[resourceId('Microsoft.Network/routeTables', variables('rtt-untrust'))]"
+                     }
+                 }
+               },
+               {
+                 "name": "[variables('vnet-trust-subnet-name')]",
+                 "properties": {
+                     "addressPrefix": "[parameters('vnet-trust-subnet-prefix')]",
+                     "routeTable": {
+                         "id": "[resourceId('Microsoft.Network/routeTables', variables('rtt-trust'))]"
+                     }
+                 }
+               }
+             ]
+           }
+        },
+        {
+            "apiVersion": "2015-06-15",
+            "type": "Microsoft.Network/routeTables",
+            "name": "[variables('rtt-untrust')]",
+            "location": "[resourceGroup().location]",
+            "tags": {
+              "displayName": "RTT - Untrust subnet"
+            },
+            "properties": {
+              "routes": [
+                {
+                  "name": "RouteToAny",
+                  "properties": {
+                    "addressPrefix": "0.0.0.0/0",
+                    "nextHopType": "Internet"
+                  }
+                }
+              ]
+            }
+        },
+        {
+            "apiVersion": "2015-06-15",
+            "type": "Microsoft.Network/routeTables",
+            "name": "[variables('rtt-trust')]",
+            "location": "[resourceGroup().location]",
+            "tags": {
+              "displayName": "RTT - Trust subnet"
+            },
+            "properties": {
+              "routes": [
+                {
+                  "name": "RouteToAny",
+                  "properties": {
+                    "addressPrefix": "0.0.0.0/0",
+                    "nextHopType": "VirtualAppliance",
+                    "nextHopIpAddress": "[parameters('vsrx-addr-ge-0-0-1')]"
+                  }
+                }
+              ]
+            }
+        },
+        {
+           "apiVersion": "2016-03-30",
+           "type": "Microsoft.Network/networkInterfaces",
+           "name": "[variables('vsrxVM').mgtNicName]",
+           "location": "[resourceGroup().location]",
+           "dependsOn": [
+             "[concat('Microsoft.Network/virtualNetworks/', variables('vnet-name'))]",
+             "[concat('Microsoft.Network/publicIPAddresses/', variables('vsrxVM').pipNameFxp0)]"
+           ],
+           "properties": {
+             "ipConfigurations": [
+               {
+                 "name": "ipconfig1",
+                 "properties": {
+                   "privateIPAllocationMethod": "Dynamic",
+                   "publicIPAddress": {
+                     "id": "[variables('vsrx-pip-fxp0-id')]"
+                   },
+                   "subnet": {
+                     "id": "[variables('vnet-mgt-subnet-id')]"
+                   }
+                 }
+               }
+             ]
+           }
+        },
+        {
+           "apiVersion": "2016-03-30",
+           "type": "Microsoft.Network/networkInterfaces",
+           "name": "[variables('vsrxVM').untrustNicName]",
+           "location": "[resourceGroup().location]",
+           "dependsOn": [
+             "[concat('Microsoft.Network/virtualNetworks/', variables('vnet-name'))]"
+           ],
+           "properties": {
+             "ipConfigurations": [
+               {
+                 "name": "ipconfig1",
+                 "properties": {
+                   "privateIPAllocationMethod": "Static",
+                   "privateIPAddress": "[variables('vsrxVM').untrustPrivateIP]",
+                   "publicIPAddress": {
+                     "id": "[variables('vsrx-pip-ge000-id')]"
+                   },
+                   "subnet": {
+                     "id": "[variables('vnet-untrust-subnet-id')]"
+                   }
+                 }
+               }
+             ]
+           }
+        },
+        {
+           "apiVersion": "2016-03-30",
+           "type": "Microsoft.Network/networkInterfaces",
+           "name": "[variables('vsrxVM').trustNicName]",
+           "location": "[resourceGroup().location]",
+           "dependsOn": [
+             "[concat('Microsoft.Network/virtualNetworks/', variables('vnet-name'))]"
+           ],
+           "properties": {
+             "ipConfigurations": [
+               {
+                 "name": "ipconfig1",
+                 "properties": {
+                   "privateIPAllocationMethod": "Static",
+                   "privateIPAddress": "[variables('vsrxVM').trustPrivateIP]",
+                   "subnet": {
+                     "id": "[variables('vnet-trust-subnet-id')]"
+                   }
+                 }
+               }
+             ],
+             "enableIPForwarding": true
+           }
+        },
+        {
+          "apiVersion": "2016-06-01",
+          "name": "vSRX",
+          "type": "Microsoft.Resources/deployments",
+           "dependsOn": [
+             "[concat('Microsoft.Network/networkInterfaces/', variables('vsrxVM').mgtNicName)]",
+             "[concat('Microsoft.Network/networkInterfaces/', variables('vsrxVM').untrustNicName)]",
+             "[concat('Microsoft.Network/networkInterfaces/', variables('vsrxVM').trustNicName)]",
+             "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]"
+           ],
+           "properties": {
+             "mode": "Incremental",
+             "templateLink": {
+               "uri": "[variables('vsrxTemplateUrl')]",
+               "contentVersion": "1.0.0.0"
+            },
+            "parameters": {
+              "location": {
+                "value": "[variables('location')]"
+              },
+              "vmName": {
+                "value": "[variables('vsrxVM').vmName]"
+              },
+              "mgtNicName": {
+                "value": "[variables('vsrxVM').mgtNicName]"
+              },
+              "untrustNicName": {
+                "value": "[variables('vsrxVM').untrustNicName]"
+              },
+              "trustNicName": {
+                "value": "[variables('vsrxVM').trustNicName]"
+              },
+              "vmSize": {
+                "value": "[variables('vsrxVM').vmSize]"
+              },
+              "vsrx-username": {
+                "value": "[parameters('vsrx-username')]"
+              },
+              "vsrx-password": {
+                "value": "[parameters('vsrx-password')]"
+              },
+              "sshKey": {
+                "value": "[parameters('sshKey')]"
+              },
+              "storageAccountName": {
+                "value": "[variables('storageAccountName')]"
+              }
+            }
+          }
+        }
+     ],
+          
+  "outputs": {  }
+}

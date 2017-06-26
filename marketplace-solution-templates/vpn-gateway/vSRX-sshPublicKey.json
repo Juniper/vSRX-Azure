@@ -1,0 +1,137 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+
+    "parameters" : {
+        "storageAccountName": {
+          "type": "string",
+          "metadata": {
+            "description": "Storage Account Name"
+          }
+        },
+        "location": {
+          "type": "string"
+        },
+        "vmSize": {
+          "type": "string",
+          "metadata": {
+            "description": "Virtual Machine Size"
+          }
+        },
+        "vmName": {
+          "type": "string",
+          "metadata": {
+            "description": "vSRX Name"
+          }
+        },
+        "mgtNicName": {
+          "type": "string"
+        },
+        "untrustNicName": {
+          "type": "string"
+        },
+        "trustNicName": {
+          "type": "string"
+        },
+        "vsrx-username": {
+          "type": "string",
+          "metadata": {
+            "description": "vSRX user name"
+          }
+        },
+        "vsrx-password": {
+          "type": "securestring",
+          "metadata": {
+            "description": "vSRX user password"
+          }
+        },
+        "sshKey": {
+          "type": "string",
+          "metadata": {
+            "description": "vSRX public SSH key"
+          }
+        }
+    },
+    "variables": {
+        "pathToSshKey": "[concat('/home/',parameters('vsrx-username'),'/.ssh/authorized_keys')]",
+        "storageContainerName": "vsrx"
+    },
+    "resources": [
+    {
+      "apiVersion": "2016-03-30",
+      "name": "[parameters('vmName')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "location": "[parameters('location')]",
+      "plan": {
+        "name": "vsrx-asecb-1-azure",
+        "publisher": "juniper-networks",
+        "product": "vsrx-next-generation-firewall-preview"
+      },
+      "properties": {
+              "hardwareProfile": {
+                "vmSize": "[parameters('vmSize')]"
+              },
+            "storageProfile": {
+              "imageReference": {
+                  "publisher": "juniper-networks",
+                  "offer": "vsrx-next-generation-firewall-preview",
+                  "sku": "vsrx-asecb-1-azure",
+                  "version": "latest"
+              },
+              "osDisk": {
+                  "osType": "Linux",
+                  "name": "[concat(parameters('vmName'), '-Disk')]",
+                  "vhd": {
+                    "uri": "[concat(reference(concat('Microsoft.Storage/storageAccounts/', parameters('storageAccountName')), '2015-06-15').primaryEndpoints.blob, variables('storageContainerName'), '/', parameters('vmName'), uniquestring(resourceGroup().id), '.vhd')]"
+                  },
+                  "caching": "ReadWrite",
+                  "createOption": "FromImage"
+              }
+              },
+              "osProfile": {
+                "computerName": "[parameters('vmName')]",
+                "adminUsername": "[parameters('vsrx-username')]",
+                "linuxConfiguration": {
+                  "disablePasswordAuthentication": "true",
+                  "ssh": {
+                    "publicKeys": [
+                      {
+                        "path": "[variables('pathToSshKey')]",
+                        "keyData": "[parameters('sshKey')]"
+                      }
+                    ]
+                  }
+                }
+              },
+              "networkProfile": {
+                "networkInterfaces": [
+                  {
+                    "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('mgtNicName'))]",
+                    "properties": {
+                        "primary": true
+                    }
+                  },
+                  {
+                    "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('untrustNicName'))]",
+                    "properties": {
+                        "primary": false
+                    }
+                  },
+                  {
+                    "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('trustNicName'))]",
+                    "properties": {
+                        "primary": false
+                    }
+                  }
+                ]
+              },
+              "diagnosticsProfile": {
+                "bootDiagnostics": {
+                  "enabled": true,
+                  "storageUri": "[reference(concat('Microsoft.Storage/storageAccounts/', parameters('storageAccountName')), '2015-06-15').primaryEndpoints.blob]"
+                }
+              }
+          }
+        }
+    ]
+}

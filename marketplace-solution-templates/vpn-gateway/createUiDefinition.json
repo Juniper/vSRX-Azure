@@ -1,0 +1,190 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/0.1.2-preview/CreateUIDefinition.MultiVm.json",
+  "handler": "Microsoft.Compute.MultiVm",
+  "version": "0.1.2-preview",
+  "parameters": {
+    "basics": [
+      {
+        "name": "adminUsername",
+	      "type": "Microsoft.Compute.UserNameTextBox",
+	      "label": "Admin Username",
+	      "toolTip": "Administrator username for VSRX",
+	      "osPlatform": "Linux"
+      },
+      {
+        "name": "SSHCredntials",
+	      "type": "Microsoft.Compute.CredentialsCombo",
+	      "label": {
+                   "authenticationType": "Authentication type",
+		               "password": "Admin user password",
+		               "confirmPassword": "Confirm password",
+		               "sshPublicKey": "SSH public key"
+                 },
+        "toolTip": {
+                     "authenticationType": "Admin user authentication type",
+		                 "password": "",
+		                 "sshPublicKey": ""
+                   },
+        "constraints": {
+                         "required": true
+                       },
+        "options": {
+                     "hideConfirmation": false
+                   },
+        "osPlatform": "Linux"
+      }
+    ],
+	  
+    "steps": [
+      {
+        "name": "vmSettings",
+        "label": "Virtual Machine Settings",
+        "subLabel": {
+          "preValidation": "Required",
+          "postValidation": "Done"
+        },
+        "bladeTitle": "Virtual Machine Settings",
+        "elements": [
+          {
+            "name": "virtualMachineSize",
+            "type": "Microsoft.Compute.SizeSelector",
+            "label": "VM size",
+            "toolTip": "Select VM Size",
+            "recommendedSizes": [
+              "Standard_DS3_v2",
+	      "Standard_DS4_v2",
+	      "Standard_DS5_v2"
+            ],
+            "constraints": {
+              "allowedSizes": [
+                "Standard_DS3_v2",
+		"Standard_DS4_v2",
+                "Standard_DS5_v2"
+              ]
+            },
+            "osPlatform": "Linux",
+            "imageReference": {
+              "publisher": "juniper-networks",
+              "offer": "vsrx-next-generation-firewall-preview",
+              "sku": "vsrx-asecb-1-azure"
+            }
+          },
+          {
+            "name": "virtualMachineName",
+            "type": "Microsoft.Common.TextBox",
+            "label": "vSRX host name",
+            "toolTip": "",
+            "constraints": {
+              "required": true
+            }
+          },
+          {
+             "name": "StorageAccount",
+             "type": "Microsoft.Storage.StorageAccountSelector",
+             "label": "New Storage Account Name",
+             "defaultValue": {
+                 "type": "Standard_LRS"
+             },
+             "constraints": {
+                 "allowedTypes": ["Standard_LRS","Standard_GRS","Standard_RAGRS"]
+             },
+             "options": {
+                 "hideExisting": true
+             }
+          }
+        ]
+      },
+      {
+        "name": "vsrxNetworking",
+        "label": "Network Settings",
+        "subLabel": {
+          "preValidation": "Required",
+          "postValidation": "Done"
+        },
+        "bladeTitle": "Network Settings",
+        "elements": [
+            
+            {
+               "name": "vnetDetails",
+               "type": "Microsoft.Network.VirtualNetworkCombo",
+               "label": {
+                   "virtualNetwork": "Virtual network",
+                   "subnets": "Subnets"
+               },
+               "toolTip": {
+                   "virtualNetwork": "Create a virtual network and three subnets for management, trust and untrust interfaces.",
+                   "subnets": ""
+               },
+               "options": {
+                   "hideExisting" : true
+               },
+               "defaultValue": {
+                   "name": "vSRXVirtualNetwork",
+                   "addressPrefixSize": "/16"
+               },
+               "constraints": {
+                   "minAddressPrefixSize": "/24"
+               },
+               "subnets": {
+                   "subnet0": {
+                       "label": "Management Subnet",
+                       "defaultValue": {
+                           "name": "Management",
+                           "addressPrefixSize": "/24"
+                       },
+                       "constraints": {
+                           "minAddressPrefixSize": "/29",
+                           "minAddressCount": 1,
+                           "requireContiguousAddresses": true
+                       }
+                   },
+                   "subnet1": {
+                       "label": "Untrust Subnet",
+                       "defaultValue": {
+                           "name": "Untrust",
+                           "addressPrefixSize": "/24"
+                       },
+                       "constraints": {
+                           "minAddressPrefixSize": "/29",
+                           "minAddressCount": 2,
+                           "requireContiguousAddresses": true
+                       }
+                   },
+                   "subnet2": {
+                       "label": "Trust Subnet",
+                       "defaultValue": {
+                           "name": "Trust",
+                           "addressPrefixSize": "/24"
+                       },
+                       "constraints": {
+                           "minAddressPrefixSize": "/29",
+                           "minAddressCount": 4,
+                           "requireContiguousAddresses": true
+                       }
+                   }
+                }
+            }
+          ]
+      }
+          
+    ],
+    "outputs": {
+      "storageAccountName": "[steps('vmSettings').StorageAccount.name]",
+      "virtualMachineSize": "[steps('vmSettings').virtualMachineSize]",
+      "vsrx-name": "[steps('vmSettings').virtualMachineName]",
+      "vsrx-addr-ge-0-0-0": "[steps('vsrxNetworking').vnetDetails.subnets.subnet1.startAddress]",
+      "vsrx-addr-ge-0-0-1": "[steps('vsrxNetworking').vnetDetails.subnets.subnet2.startAddress]",
+      "vsrx-username": "[basics('adminUsername')]",
+      "vsrx-password": "[basics('SSHCredntials').password]",
+      "authenticationType": "[basics('SSHCredntials').authenticationType]",
+      "sshKey": "[basics('SSHCredntials').sshPublicKey]",
+      "vnet-prefix": "[steps('vsrxNetworking').vnetDetails.addressPrefix]",
+      "vnet-mgt-subnet-basename": "[steps('vsrxNetworking').vnetDetails.subnets.subnet0.name]",
+      "vnet-untrust-subnet-basename": "[steps('vsrxNetworking').vnetDetails.subnets.subnet1.name]",
+      "vnet-trust-subnet-basename": "[steps('vsrxNetworking').vnetDetails.subnets.subnet2.name]",
+      "vnet-mgt-subnet-prefix": "[steps('vsrxNetworking').vnetDetails.subnets.subnet0.addressPrefix]",
+      "vnet-untrust-subnet-prefix": "[steps('vsrxNetworking').vnetDetails.subnets.subnet1.addressPrefix]",
+      "vnet-trust-subnet-prefix": "[steps('vsrxNetworking').vnetDetails.subnets.subnet2.addressPrefix]"
+    }
+  }
+}
