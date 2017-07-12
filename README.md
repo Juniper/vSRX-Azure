@@ -1,1 +1,14 @@
-Each Marketplace template deploys a vSRX-based solution template from the Azure portal. Some cli-based solutions are described in the "sample-templates" to help users interested in cli deployment understand how vSRX solution templates can be deployed via the cli.
+
+Introduction
+
+This is a repository for Azure Resoure Manager (ARM) templates to deploy vSRX on the Azure public cloud.
+
+marketplace-solution-templates directory contains templates to deploy vSRX solution templates from Azure portal.
+
+sample-templates directory contains templates to deploy vSRX using Azure CLI.
+
+
+
+Use of files in this repo are governed by the Microsoft Code of Conduct (https://opensource.microsoft.com/codeofconduct/).
+
+Notwithstanding the aforementioned Code of Conduct, all code, templates and other files in this repo are released on an “AS IS” BASIS, WITHOUT WARRANTIES, CONDITIONS, OR SUPPORT OBLIGATIONS OF ANY KIND, EXPRESS OR IMPLED.
