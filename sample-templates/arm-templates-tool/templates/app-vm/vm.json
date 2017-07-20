@@ -1,0 +1,207 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+
+    "parameters" : {
+        "storageAccountName": {
+          "type": "string",
+          "metadata": {
+            "description": "Storage Account Name"
+          }
+        },
+        "storageContainerName": {
+          "type": "string",
+          "metadata": {
+            "description": "Storage Container Name"
+          }
+        },
+        "vnet-name": {
+          "type": "string",
+          "metadata": {
+            "description": "Virtual network name"
+          }
+        },
+        "vnet-mgt-subnet-name": {
+          "type": "string",
+          "metadata": {
+            "description": "Management subnet name"
+          }
+        },
+        "vnet-trust-subnet-name": {
+          "type": "string",
+          "metadata": {
+            "description": "Trust subnet name"
+          }
+        },
+        "vm-app-name": {
+          "type": "string",
+          "metadata": {
+            "description": "NAT VM name"
+          }
+        },
+        "vm-app-addr-eth0": {
+          "type": "string",
+          "metadata": {
+            "description": "NAT VM eth0 address"
+          }
+        },
+        "vm-app-username": {
+          "type": "string",
+          "metadata": {
+            "description": "NAT VM username"
+          }
+        },
+        "vm-app-password": {
+          "type": "securestring",
+          "metadata": {
+            "description": "NAT VM password"
+          }
+        }
+    },
+
+    "variables": {
+        "appVM": {
+            "vmSize": "Standard_DS3_v2",
+            "publisher": "OpenLogic",
+            "offer": "CentOS",
+            "sku": "7.2",
+            "version": "latest",
+            "vmName": "[parameters('vm-app-name')]",
+            "pipName": "[parameters('vm-app-addr-eth0')]",
+            "eth0Name": "[concat(parameters('vm-app-name'), '-eth0')]",
+            "eth1Name": "[concat(parameters('vm-app-name'), '-eth1')]"
+        },
+        "vnet-id": "[resourceId('Microsoft.Network/virtualNetworks',parameters('vnet-name'))]",
+        "vnet-mgt-subnet-id": "[concat(variables('vnet-id'),'/subnets/', parameters('vnet-mgt-subnet-name'))]",
+        "vnet-trust-subnet-id": "[concat(variables('vnet-id'),'/subnets/', parameters('vnet-trust-subnet-name'))]",
+        "pip-vm-app-id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('appVM').pipName)]"
+    },
+
+    "resources": [  
+        {
+          "type": "Microsoft.Network/publicIPAddresses",
+          "name": "[variables('appVM').pipName]",
+          "apiVersion": "2016-03-30",
+          "location": "[resourceGroup().location]",
+          "properties": {
+            "publicIPAllocationMethod": "Dynamic",
+            "dnsSettings": {
+              "domainNameLabel": "[variables('appVM').pipName]"
+            }
+          }
+        },
+        {
+           "apiVersion": "2016-03-30",
+           "type": "Microsoft.Network/networkInterfaces",
+           "name": "[variables('appVM').eth0Name]",
+           "location": "[resourceGroup().location]",
+           "dependsOn": [
+             "[concat('Microsoft.Network/publicIPAddresses/', variables('appVM').pipName)]"
+           ],
+           "properties": {
+             "ipConfigurations": [
+               {
+                 "name": "ipconfig1",
+                 "properties": {
+                   "privateIPAllocationMethod": "Dynamic",
+                   "publicIPAddress": {
+                     "id": "[variables('pip-vm-app-id')]"
+                   },
+                   "subnet": {
+                     "id": "[variables('vnet-mgt-subnet-id')]"
+                   }
+                 }
+               }
+             ],
+             "enableIPForwarding": true
+           }
+        },
+         {
+           "apiVersion": "2016-03-30",
+           "type": "Microsoft.Network/networkInterfaces",
+           "name": "[variables('appVM').eth1Name]",
+           "location": "[resourceGroup().location]",
+           "dependsOn": [
+           ],
+           "properties": {
+             "ipConfigurations": [
+               {
+                 "name": "ipconfig1",
+                 "properties": {
+                   "privateIPAllocationMethod": "Dynamic",
+                   "subnet": {
+                     "id": "[variables('vnet-trust-subnet-id')]"
+                   }
+                 }
+               }
+             ],
+             "enableIPForwarding": true
+           }
+        },
+               
+        {
+          "comments": "APP VM used to receive and send traffic",
+          "apiVersion": "2016-03-30",
+          "name": "[variables('appVM').vmName]",
+          "type": "Microsoft.Compute/virtualMachines",
+          "location": "[resourceGroup().location]",
+           "dependsOn": [
+             "[concat('Microsoft.Network/networkInterfaces/', variables('appVM').eth0Name)]",
+             "[concat('Microsoft.Network/networkInterfaces/', variables('appVM').eth1Name)]"
+           ],
+          "properties": {
+              "hardwareProfile": {
+                "vmSize": "[variables('appVM').vmSize]"
+              },
+              "storageProfile": {
+                "imageReference": {
+                  "publisher": "[variables('appVM').publisher]",
+                  "offer": "[variables('appVM').offer]",
+                  "sku": "[variables('appVM').sku]",
+                  "version": "[variables('appVM').version]"
+                },
+                "osDisk": {
+                  "name": "[variables('appVM').vmName]",
+                  "vhd": {
+                    "uri": "[concat(reference(concat('Microsoft.Storage/storageAccounts/', parameters('storageAccountName')), '2015-06-15').primaryEndpoints.blob, parameters('storageContainerName'), '/', variables('appVM').vmName, uniquestring(resourceGroup().id), '.vhd')]"
+                  },
+                  "caching": "ReadWrite",
+                  "createOption": "FromImage"
+                }
+              },
+              "osProfile": {
+                "computerName": "[variables('appVM').vmName]",
+                "adminUsername": "[parameters('vm-app-username')]",
+                "adminPassword": "[parameters('vm-app-password')]",
+                "linuxConfiguration": {
+                  "disablePasswordAuthentication": false
+                }
+              },
+              "networkProfile": {
+                "networkInterfaces": [
+                  {
+                    "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('appVM').eth0Name)]",
+                    "properties": {
+                        "primary": true
+                    }
+                  },
+                  {
+                    "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('appVM').eth1Name)]",
+                    "properties": {
+                        "primary": false
+                    }
+                  }
+                ]
+              },
+              "diagnosticsProfile": {
+                "bootDiagnostics": {
+                  "enabled": true,
+                  "storageUri": "[reference(concat('Microsoft.Storage/storageAccounts/', parameters('storageAccountName')), '2015-06-15').primaryEndpoints.blob]"
+                }
+              }
+          }
+        }
+    ],
+
+    "outputs": {  }
+}
