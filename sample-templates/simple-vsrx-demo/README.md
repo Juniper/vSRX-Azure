@@ -2,5 +2,5 @@ This template launches a vSRX instance from the vSRX image available at the Azur
 
 Ensure that the default values in the vsrx.parameters.json file match your desired values. Modify if otherwise.To deploy this template, run the below command from the Azure cli:
 ```
-azure group deployment create --template-file vsrx.json --parameters-file vsrx.parameters.json --resource-group <resource-group-name> --name <deployment-name>
+az group deployment create --resource-group <resource-group-name> --template-file vsrx.json --parameters @vsrx.parameters.json
 ```
