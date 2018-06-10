@@ -144,7 +144,7 @@
           "properties": {
             "publicIPAllocationMethod": "Dynamic",
             "dnsSettings": {
-              "domainNameLabel": "[variables('vsrxVM').pipNameFxp0]"
+              "domainNameLabel": "[concat(variables('vsrxVM').pipNameFxp0, resourceGroup().name)]"
             }
           }
         },
@@ -156,7 +156,7 @@
           "properties": {
             "publicIPAllocationMethod": "Dynamic",
             "dnsSettings": {
-              "domainNameLabel": "[variables('vsrxVM').pipNameGe000]"
+              "domainNameLabel": "[concat(variables('vsrxVM').pipNameGe000, resourceGroup().name)]"
             }
           }
         },
@@ -276,7 +276,8 @@
            "name": "[variables('vsrxVM').untrustNicName]",
            "location": "[resourceGroup().location]",
            "dependsOn": [
-             "[concat('Microsoft.Network/virtualNetworks/', variables('vnet-name'))]"
+             "[concat('Microsoft.Network/virtualNetworks/', variables('vnet-name'))]",
+             "[concat('Microsoft.Network/publicIPAddresses/', variables('vsrxVM').pipNameGe000)]"
            ],
            "properties": {
              "ipConfigurations": [
