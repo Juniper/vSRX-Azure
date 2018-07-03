@@ -45,10 +45,10 @@
             "description": "vSRX user password"
           }
         },
-        "vsrx-disk": {
+        "vnet-name": {
           "type": "string",
           "metadata": {
-            "description": "vSRX disk name"
+            "description": "Virtual network name"
           }
         },
         "vnet-prefix": {
@@ -98,7 +98,7 @@
     "variables": {
         "vsrx-addr-fxp0" : "[concat(parameters('vsrx-name'), '-fxp0')]",
         "vsrx-addr-ge000" : "[concat(parameters('vsrx-name'), '-ge-0-0-0')]",
-        "vnet-name":  "[concat('vnet-', parameters('vsrx-name'))]",
+        "vnet-name":  "[parameters('vnet-name')]",
 	"storageAccountName": "[concat(take(toLower(parameters('storageAccountName')), 11), uniqueString(resourceGroup().id, deployment().name))]",
 	"storageContainerName": "vsrx",
         "vnet-mgt-subnet-name": "[concat(variables('vnet-name'), '-', parameters('vnet-mgt-subnet-basename'))]",
