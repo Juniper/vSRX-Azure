@@ -18,31 +18,36 @@
           ],
           "metadata": {
             "description": "vSRX Virtual Machine Size"
-          }
+          },
+          "defaultValue": "Standard_DS3_v2"
         },
         "vsrx-name": {
           "type": "string",
           "metadata": {
             "description": "vSRX Name"
-          }
+          },
+          "defaultValue": "vsrx-gw"
         },
         "vsrx-addr-ge-0-0-0": {
           "type": "string",
           "metadata": {
             "description": "vSRX ge-0/0/0 address"
-          }
+          },
+          "defaultValue": "192.168.10.20"
         },
         "vsrx-addr-ge-0-0-1": {
           "type": "string",
           "metadata": {
             "description": "vSRX ge-0/0/1 address"
-          }
+          },
+          "defaultValue": "192.168.20.20"
         },
         "vsrx-username": {
           "type": "string",
           "metadata": {
             "description": "vSRX user name"
-          }
+          },
+          "defaultValue": "demo"
         },
         "vsrx-password": {
           "type": "securestring",
@@ -53,50 +58,57 @@
         "vnet-name": {
           "type": "string",
           "metadata": {
-            "description": "Virtual network name"
+            "description": "Virtual network name - new or existing vnet"
           }
         },
         "vnet-prefix": {
           "type": "string",
           "metadata": {
             "description": "Virtual network prefix"
-          }
+          },
+          "defaultValue": "192.168.0.0/16"
         },
-        "vnet-mgt-subnet-basename": {
+        "vnet-mgt-subnet-name": {
           "type": "string",
           "metadata": {
-            "description": "Management subnet base name"
-          }
+            "description": "Management subnet name"
+          },
+          "defaultValue": "Management"
         },
         "vnet-mgt-subnet-prefix": {
           "type": "string",
           "metadata": {
             "description": "Management subnet prefix"
-          }
+          },
+          "defaultValue": "192.168.0.0/24"
         },
-        "vnet-trust-subnet-basename": {
+        "vnet-trust-subnet-name": {
           "type": "string",
           "metadata": {
             "description": "Trust subnet name"
-          }
+          },
+          "defaultValue": "Trust"
         },
         "vnet-trust-subnet-prefix": {
           "type": "string",
           "metadata": {
             "description": "Trust subnet prefix"
-          }
+          },
+          "defaultValue": "192.168.20.0/24"
         },
-        "vnet-untrust-subnet-basename": {
+        "vnet-untrust-subnet-name": {
           "type": "string",
           "metadata": {
-            "description": "Untrust subnet base name"
-          }
+            "description": "Untrust subne name"
+          },
+          "defaultValue": "Untrust"
         },
         "vnet-untrust-subnet-prefix": {
           "type": "string",
           "metadata": {
             "description": "Untrust subnet prefix"
-          }
+          },
+          "defaultValue": "192.168.10.0/24"
         }
     },
 
@@ -106,9 +118,9 @@
         "vnet-name":  "[parameters('vnet-name')]",
 	"storageAccountName": "[concat(take(toLower(parameters('storageAccountName')), 11), uniqueString(resourceGroup().id, deployment().name))]",
 	"storageContainerName": "vsrx",
-        "vnet-mgt-subnet-name": "[concat(variables('vnet-name'), '-', parameters('vnet-mgt-subnet-basename'))]",
-        "vnet-untrust-subnet-name": "[concat(variables('vnet-name'), '-', parameters('vnet-untrust-subnet-basename'))]",
-        "vnet-trust-subnet-name": "[concat(variables('vnet-name'), '-', parameters('vnet-trust-subnet-basename'))]",
+        "vnet-mgt-subnet-name": "[parameters('vnet-mgt-subnet-name')]",
+        "vnet-untrust-subnet-name": "[parameters('vnet-untrust-subnet-name')]",
+        "vnet-trust-subnet-name": "[parameters('vnet-trust-subnet-name')]",
         "rtt-untrust": "[concat('rtt-untrust-subnet-', variables('vnet-name'))]",
         "rtt-trust": "[concat('rtt-trust-subnet-', variables('vnet-name'))]",
         "vsrxVM": {
