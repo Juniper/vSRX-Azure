@@ -9,6 +9,17 @@
             "description": "Storage Account Name"
           }
         },
+        "vSRX-model": {
+          "type": "string",
+          "allowedValues": [
+            "BYOL",
+            "PAYG - w/Anti Virus"
+          ],
+          "metadata": {
+            "description": "vSRX Model"
+          },
+          "defaultValue": "BYOL"
+        },
         "virtualMachineSize": {
           "type": "string",
           "allowedValues": [
@@ -140,7 +151,29 @@
         "vnet-mgt-subnet-id": "[concat(variables('vnet-id'),'/subnets/', variables('vnet-mgt-subnet-name'))]",
 
         "vsrx-pip-fxp0-id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('vsrxVM').pipNameFxp0)]",
-        "vsrx-pip-ge000-id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('vsrxVM').pipNameGe000)]"
+        "vsrx-pip-ge000-id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('vsrxVM').pipNameGe000)]",
+        "plan-byol": {
+          "name": "vsrx-byol-azure-image",
+          "publisher": "juniper-networks",
+          "product": "vsrx-next-generation-firewall"
+        },
+        "plan-payg-b1": {
+          "name": "vsrx-azure-image-payg-b1",
+          "publisher": "juniper-networks",
+          "product": "vsrx-next-generation-firewall-payg"
+        },
+        "image-byol": {
+          "publisher": "juniper-networks",
+          "offer": "vsrx-next-generation-firewall",
+          "sku": "vsrx-byol-azure-image",
+          "version": "latest"
+        },
+        "image-payg-b1": {
+          "publisher": "juniper-networks",
+          "offer": "vsrx-next-generation-firewall-payg",
+          "sku": "vsrx-azure-image-payg-b1",
+          "version": "latest"
+        }
     },
 
     "resources": [  
@@ -343,11 +376,7 @@
           "name": "[variables('vsrxVM').vmName]",
           "type": "Microsoft.Compute/virtualMachines",
           "location": "[resourceGroup().location]",
-	  "plan": {
-		  "name": "vsrx-byol-azure-image",
-		  "publisher": "juniper-networks",
-		  "product": "vsrx-next-generation-firewall"
-	  },
+	  "plan": "[if(equals(parameters('vSRX-model'), 'BYOL'), variables('plan-byol'), variables('plan-payg-b1'))]",
            "dependsOn": [
              "[concat('Microsoft.Network/networkInterfaces/', variables('vsrxVM').mgtNicName)]",
              "[concat('Microsoft.Network/networkInterfaces/', variables('vsrxVM').untrustNicName)]",
@@ -358,12 +387,7 @@
                 "vmSize": "[variables('vsrxVM').vmSize]"
               },
 	      "storageProfile": {
-		  "imageReference": {
-	              "publisher": "juniper-networks",
-	              "offer": "vsrx-next-generation-firewall",
-	              "sku": "vsrx-byol-azure-image",
-		      "version": "latest"
-	          },
+		  "imageReference": "[if(equals(parameters('vSRX-model'), 'BYOL'), variables('image-byol'), variables('image-payg-b1'))]",
 		  "osDisk": {
 	              "osType": "Linux",
 	              "name": "[concat(variables('vsrxVM').vmName, '-Disk')]",

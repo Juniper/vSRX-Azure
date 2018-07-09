@@ -5,6 +5,9 @@
     "storageAccountName": {
       "value": "jnstorage"
     },
+    "vSRX-model": {
+      "value": "PAYG - w/Anti Virus"
+    },
     "virtualMachineSize": {
       "value": "Standard_DS3_v2"
     },
