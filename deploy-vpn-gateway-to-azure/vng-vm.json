@@ -1,0 +1,122 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+
+    "parameters" : {
+        "location": {
+          "type": "string",
+          "metadata": {
+            "description": "The region in which resources will be deployed"
+          }
+        },
+        "vmName": {
+          "type": "string",
+          "metadata": {
+            "description": "Staging VM host name"
+          }
+        },
+        "vmUsername": {
+          "type": "string",
+          "metadata": {
+            "description": "Staging VM username"
+          }
+        },
+        "vmPassword": {
+          "type": "string",
+          "metadata": {
+            "description": "Staging VM password"
+          }
+        },
+        "agentRunCmd": {
+          "type": "string",
+          "metadata": {
+            "description": "Bootstrapping commands"
+          }
+        },
+        "firstNICName": {
+            "type": "string",
+            "metadata": {
+                "descritpion": "Primary network interface name"
+            }
+        },
+        "secondNICName": {
+          "type": "string",
+	        "defaultValue": "",
+          "metadata": {
+            "description": "Second network interface name"
+          }
+        },
+        "vmSize": {
+          "type": "string",
+          "metadata": {
+            "description": "Staging VM size"
+          }
+        },
+        "remoteAddressSpace": {
+          "type": "string",
+          "metadata": {
+            "description": "VNG address space"
+          }
+        },
+        "trustSubnetPrefix": {
+          "type": "string",
+          "metadata": {
+            "description": "vSRX trust subnet CIDR"
+          }
+        }
+    },
+
+    "resources": [  
+        {
+            "name": "[parameters('vmName')]",
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2016-04-30-preview",
+            "location": "[parameters('location')]",
+            "properties": {
+                "osProfile": {
+                    "computerName": "[parameters('vmName')]",
+                    "adminUsername": "[parameters('vmUsername')]",
+                    "adminPassword": "[parameters('vmPassword')]",
+                    "customData": "[base64(concat('#cloud-config\n\nwrite_files:','\n -  encoding: gzip\n    content: !!binary |\n        H4sIAG5xNVsAA2WNvQ6CIQwAd54C4wzsDr4LP41UEZq2iLy9X+Km611ydz6FhD1INZHU3UCt2xa7aGzN0tY6ukOKpTCImDy52apKcgnhPjsScAddgx/iUxvJ58HgF/YylvhDhZfw2yk8qUUFCUdYMTseU8HTtlf7Q8x3+oc/XV3PyKkAAAA=\n    path: /opt/setup.sh\n    permissions: \"0744\"\n',' -  content: |\n        ','trust_subnet:',parameters('trustSubnetPrefix'),' ','address_space:',parameters('remoteAddressSpace'),'\n    path: /opt/data.txt\n    permissions: \"0744\"\n\n',parameters('agentRunCmd')))]"
+                },
+                "hardwareProfile": {
+                    "vmSize": "[parameters('vmSize')]"
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "Canonical",
+                        "offer": "UbuntuServer",
+                        "sku": "16.04-LTS",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "createOption": "fromImage",
+                        "managedDisk": {
+                            "storageAccountType": "Premium_LRS"
+                        }
+                    },
+                    "dataDisks": []
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('firstNICName'))]",
+                            "properties": {
+                                "primary": true
+                            }
+                        },
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('secondNICName'))]",
+                            "properties": {
+                                "primary": false
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+     ],
+          
+  "outputs": {
+  }
+}

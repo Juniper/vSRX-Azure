@@ -1,0 +1,57 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "storageAccountName": {
+      "value": "jnstore"
+    },
+    "virtualMachineSize": {
+      "value": "Standard_DS3_v2"
+    },
+    "vsrx-name": {
+      "value": "vsrx-vpn01"
+    },
+    "vsrx-addr-ge-0-0-0": {
+      "value": "192.168.10.20"
+    },
+    "vsrx-addr-ge-0-0-1": {
+      "value": "192.168.20.20"
+    },
+    "vsrx-username": {
+      "value": "demo"
+    },
+    "authenticationType": {
+      "value": "password"
+    },
+    "vsrx-password": {
+      "value": "Admin1234567"
+    },
+    "sshKey": {
+      "value": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCpMxYAbvSyyMiag4ZYga5mgSWWDT9813RbuC0PlAYa/3HRFZWb8MW85RDZ3ZyP99UjLmAToUi9w250duEZABL1iXrFZ9mv6OukupUWzsDGdzMDrGzu8/8d93/PN+ILB8Dvvl3TiU9XkgTEvKsVA9nb0aWfwkcyk4UKKx4Nk5TQ1RT58IpvhxJrTUBsGEBwW8Gx3IpD+Y06q0wgwo8no0c8ayem5JdEHYOUh5os1TmiIUdIbIiDPegRAQu+TP/kdqmJzOWGWe0tT+CKWcjI1RfiQPGI3DSSSkY/NEpp4ZruKlUQVPLUGyU0tqlBZPqZBOzPRtgbRn46rkh5QjjR/01/ abidabadi@abidabadi-mbp"
+    },
+    "vnet-prefix": {
+      "value": "192.168.0.0/16"
+    },
+    "vnet-mgt-subnet-basename": {
+      "value": "mgt-subnet"
+    },
+    "vnet-mgt-subnet-prefix": {
+      "value": "192.168.0.0/24"
+    },
+    "vnet-trust-subnet-basename": {
+      "value": "trust-subnet"
+    },
+    "vnet-trust-subnet-prefix": {
+      "value": "192.168.20.0/24"
+    },
+    "vnet-untrust-subnet-basename": {
+      "value": "untrust-subnet"
+    },
+    "vnet-untrust-subnet-prefix": {
+      "value": "192.168.10.0/24"
+    },
+    "sharedKey": {
+      "value": "1234567"
+    }
+  }
+}

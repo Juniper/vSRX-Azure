@@ -1,0 +1,224 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+
+    "parameters" : {
+        "location": {
+          "type": "string",
+          "metadata": {
+            "description": "The region in which resources will be deployed"
+          }
+        },
+        "vmName": {
+          "type": "string",
+          "metadata": {
+            "description": "Staging VM host name"
+          }
+        },
+        "vmUsername": {
+          "type": "string",
+          "metadata": {
+            "description": "Staging VM username"
+          }
+        },
+        "vmPassword": {
+          "type": "string",
+          "metadata": {
+            "description": "Staging VM password"
+          }
+        },
+        "vsrxPublicIP": {
+          "type": "string",
+          "metadata": {
+            "description": "vSRX public IP address"
+          }
+        },
+        "vsrxPassword": {
+          "type": "string",
+          "metadata": {
+            "description": "vSRX password"
+          }
+        },
+        "untrustPrivateIP": {
+          "type": "string",
+          "metadata": {
+            "description": "vSRX untrust interface privare IP address"
+          }
+        },
+        "untrustSubnetPrefix": {
+          "type": "string",
+          "metadata": {
+            "description": "vSRX untrust interface subnet prefix"
+          }
+        },
+        "trustPrivateIP": {
+          "type": "string",
+          "metadata": {
+            "description": "vSRX trust interface privare IP address"
+          }
+        },
+        "trustSubnetPrefix": {
+          "type": "string",
+          "metadata": {
+            "description": "vSRX trust interface subnet prefix"
+          }
+        },
+        "vpnSharedKey": {
+          "type": "string",
+          "metadata": {
+            "description": "Shared Key to create VPN between LNG and VNG"
+          }
+        },
+        "localAddressPrefix": {
+          "type": "string",
+          "metadata": {
+            "description": "Local Network's address space"
+          }
+        },
+        "remoteAddressSpace": {
+          "type": "string",
+          "metadata": {
+            "description": "Remote Network's address space"
+          }
+        },
+        "agentRunCmd": {
+          "type": "string",
+          "metadata": {
+            "description": "Bootstrapping commands"
+          }
+        },
+        "resourceGroupName": {
+          "type": "string",
+          "metadata": {
+            "description": "Resource group name"
+          }
+        },
+        "subscriptionId": {
+          "type": "string",
+          "metadata": {
+            "description": "Subscription Id"
+          }
+        },
+        "vngName": {
+          "type": "string",
+          "metadata": {
+            "description": "Virtual Network Gateway Name"
+          }
+        },
+        "firstNICName": {
+            "type": "string",
+            "metadata": {
+                "descritpion": "Primary network interface name"
+            }
+        },
+        "secondNICName": {
+          "type": "string",
+	        "defaultValue": "",
+          "metadata": {
+            "description": "Second network interface name"
+          }
+        },
+        "vmSize": {
+          "type": "string",
+          "metadata": {
+            "description": "Staging VM size"
+          }
+        },
+        "vsrxUsername": {
+          "type": "string",
+          "metadata": {
+            "description": "vSRX username"
+          }
+        },
+        "sshKey": {
+          "type": "string",
+          "metadata": {
+            "description": "vSRX ssh private key"
+          }
+        }
+    },
+
+    "resources": [  
+        {
+            "name": "[parameters('vmName')]",
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2016-04-30-preview",
+            "location": "[parameters('location')]",
+            "identity": { 
+                "type": "systemAssigned"
+            },
+            "properties": {
+                "osProfile": {
+                    "computerName": "[parameters('vmName')]",
+                    "adminUsername": "[parameters('vmUsername')]",
+                    "adminPassword": "[parameters('vmPassword')]",
+                    "customData": "[base64(concat('#cloud-config\n\nwrite_files:','\n -  encoding: gzip\n    content: !!binary |\n        H4sIAH4fAlsAA32NsQ7DIAxEd76CqjOwd+i/kMQqboixbCc0fx+kqmu3O73Tu/stTUhJi8ts4QXmw+mR1HKtnk8rjQJnyRuu7c8EOS+LgKqbd6m+mLE+UnrvhAxCYL3JqnGqbYpzE4gdaWld40DpUPkEg41rNtC0KYahssinf/qDaQT3/fm1CyFcSOS2AAAA\n    path: /opt/setup.sh\n    permissions: \"0744\"\n',' -  content: |\n        ','vsrx-ip:',parameters('vsrxPublicIP'),' ','rgname:',parameters('resourceGroupName'),' ','subid:',parameters('subscriptionId'),' ','vngname:',parameters('vngName'),' ','untrust_IP:',parameters('untrustPrivateIP'),' ','untrust_subnet:',parameters('untrustSubnetPrefix'),' ','trust_IP:',parameters('trustPrivateIP'),' ','trust_subnet:',parameters('trustSubnetPrefix'),' ','shared_key:',parameters('vpnSharedKey'),' ','address_space:',parameters('localAddressPrefix'),' ','remote_address_space:',parameters('remoteAddressSpace'),' ','vsrx-username:',parameters('vsrxUsername'),' ','vsrx-password:',parameters('vsrxPassword'),'\n    path: /opt/data.txt\n    permissions: \"0744\"\n\n',parameters('agentRunCmd')))]"
+                },
+                "hardwareProfile": {
+                    "vmSize": "[parameters('vmSize')]"
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "Canonical",
+                        "offer": "UbuntuServer",
+                        "sku": "16.04-LTS",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "createOption": "fromImage",
+                        "managedDisk": {
+                            "storageAccountType": "Premium_LRS"
+                        }
+                    },
+                    "dataDisks": []
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('firstNICName'))]",
+                            "properties": {
+                                "primary": true
+                            }
+                        },
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('secondNICName'))]",
+                            "properties": {
+                                "primary": false
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        { 
+            "type": "Microsoft.Compute/virtualMachines/extensions",
+            "name": "[concat(parameters('vmName'),'/ManagedIdentityExtensionForLinux')]",
+            "apiVersion": "2016-03-30",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[concat('Microsoft.Compute/virtualMachines/', parameters('vmName'))]"
+            ],
+            "properties": {
+                "publisher": "Microsoft.ManagedIdentity",
+                "type": "ManagedIdentityExtensionForLinux",
+                "typeHandlerVersion": "1.0",
+                "autoUpgradeMinorVersion": true,
+                "settings": {
+                    "port": 50342
+                },
+                "protectedSettings": {}
+            }
+        }
+     ],
+          
+  "outputs": {
+    "principalId": {
+      "type": "string",
+      "value": "[reference(concat(resourceId('Microsoft.Compute/virtualMachines/', parameters('vmName')),'/providers/Microsoft.ManagedIdentity/Identities/default'),'2015-08-31-PREVIEW').principalId]"
+    },
+    "guid0": {
+      "value": "[guid(resourceGroup().id)]",
+      "type": "string"
+    }
+  }
+}
