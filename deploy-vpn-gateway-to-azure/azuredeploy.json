@@ -37,7 +37,7 @@
           "metadata": {
             "description": "vSRX Name"
           },
-          "defaultValue": "vSRX-gw"
+          "defaultValue": "vsrx-gw"
         },
         "vsrx-vnet-name": {
           "type": "string",
