@@ -7,6 +7,9 @@ tmp_parameter_file="/tmp/$$.azure.param.json"
 tmp_template_file="/tmp/$$.azure.template.json"
 template_file="$prog_dir/templates/vsrx-gateway/vsrx.json"
 parameter_file="$prog_dir/templates/vsrx-gateway/vsrx.parameters.json"
+customdata_raw=""
+customdata_file=""
+customdata=""
 
 usage()
 {
@@ -20,6 +23,8 @@ Command options:
     -p <ssh-public-key>    SSH public key file of login user
     -f <template-file>     Azure template file
     -e <parameter-file>    Azure parameter file
+    -c <customData-file>   File including the custom data in json fomat
+    -r <customeData-raw>   File including the raw custom data
     -h --help              Get help information
 eof
 }
@@ -59,6 +64,14 @@ do
         parameter_file="$2"
         shift
         ;;
+        -c)
+        customdata_file="$2"
+        shift
+        ;;
+        -r)
+        customdata_raw="$2"
+        shift
+        ;;
         *)
         usage
         exit 0
@@ -82,6 +95,27 @@ if [ ! -f "$parameter_file" ]
 then
     error "parameter file $parameter_file doest not exist"
 fi
+
+if [ "$customdata_file" ]
+then
+    test "$customdata_raw" && error "customdata file and raw file cannot be used at the same time"
+    test -f "$customdata_file" || error "custom data file $customdata_file does not exist"
+    # Get the absolute path of the customdata file
+    customdata_file=`readlink -f ${customdata_file}`
+    gen_param_cmd_param+=' -c '"$customdata_file"
+    gen_template_cmd_param+=' -c'
+fi
+
+if [ "$customdata_raw" ]
+then
+    test "$customdata_file" && error "customdata file and raw file cannot be used at the same time"
+    test -f "$customdata_raw" || error "custom data raw file $customdata_raw does not exist"
+    # Get the absolute path of the customdata file
+    customdata_raw=`readlink -f ${customdata_raw}`
+    gen_param_cmd_param+=' -r '"$customdata_raw"
+    gen_template_cmd_param+=' -c'
+fi
+
 
 vsrx_name="`$prog_dir/utils/decode_param_file.py ${parameter_file} 'vsrx-name'`"
 if [ -z "$vsrx_name" ]

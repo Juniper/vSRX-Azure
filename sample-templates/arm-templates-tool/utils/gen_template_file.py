@@ -9,6 +9,8 @@ parser.add_option("-i", "--image", action="store_true",
                   dest="image_flag", default=False, help="Use private image")
 parser.add_option("-p", "--publickey", action="store_true",
                   dest="publickey_flag", default=False, help="Use public key")
+parser.add_option("-c", "--customdata",action="store_true", 
+		  dest="customdata_flag", default=False, help="custom data")
 (options, args) = parser.parse_args()
 
 if len(args) < 2:
@@ -44,6 +46,10 @@ try:
         vsrx['properties']['osProfile'].pop('adminPassword', None)
         vsrx['properties']['osProfile']['linuxConfiguration']['disablePasswordAuthentication'] = 'true'
         vsrx['properties']['osProfile']['linuxConfiguration']['ssh'] = json.loads(publickey_json)
+
+    if options.customdata_flag:
+        vsrx['properties']['osProfile']['customData'] = "[base64(parameters('customData'))]"
+
 except:
     sys.stderr.write('cannot change template file\n')
 
