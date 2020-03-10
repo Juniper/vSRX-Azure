@@ -1,0 +1,51 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "storageAccountName": {
+      "value": "juniperstore07"
+    },
+    "storageContainerName": {
+      "value": "vhds"
+    },
+    "vsrx-name": {
+      "value": "vsrx"
+    },
+    "vsrx-username": {
+      "value": "demo"
+    },
+    "vsrx-password": {
+      "value": "Demo123456"
+    },
+    "vsrx-sshkey": {
+      "value": "ssh-rsa placeholder"
+    }, 
+    "vsrx-disk": {
+      "value": "placeholder"
+    },
+    "vnet-prefix": {
+      "value": "10.0.0.0/16"
+    },
+    "vnet-mgt-subnet-prefix": {
+      "value": "10.0.0.0/24"
+    },
+    "vnet-west-subnet-prefix": {
+      "value": "10.0.2.0/24"
+    },
+    "vnet-east-subnet-prefix": {
+      "value": "10.0.3.0/24"
+    },
+    "vnet-north-subnet-prefix": {
+      "value": "10.0.4.0/24"
+    },
+    "vnet-south-subnet-prefix": {
+      "value": "10.0.5.0/24"
+    },
+    "ilb-front-end-ip": {
+      "value": "10.0.5.10"
+    },
+    "customData": {
+      "value": "customdata placeholder"
+    }
+  }
+}

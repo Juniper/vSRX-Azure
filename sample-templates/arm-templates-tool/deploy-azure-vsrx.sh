@@ -150,7 +150,7 @@ else
     echo "Group $resource_group already exists"
 fi
 
-account_str=`azure storage account list | egrep "\s$storage_account\s" | egrep "\s$resource_group\s"`
+account_str=`azure storage account list | egrep "\s$storage_account\s" | egrep "\s$resource_group\s*$"`
 if [ -z "$account_str" ]
 then
     azure storage account create --sku-name LRS -l "$location" --kind Storage -g "$resource_group" "$storage_account"

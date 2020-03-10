@@ -1,0 +1,538 @@
+
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+
+    "parameters": {
+        "storageAccountName": {
+          "type": "string",
+          "metadata": {
+            "description": "Storage Account Name"
+          }
+        },
+        "storageContainerName": {
+          "type": "string",
+          "metadata": {
+            "description": "Storage Container Name"
+          }
+        },
+        "vsrx-name": {
+          "type": "string",
+          "metadata": {
+            "description": "vSRX Name"
+          }
+        },
+        "vsrx-username": {
+          "type": "string",
+          "metadata": {
+            "description": "vSRX user name"
+          }
+        },
+        "vsrx-password": {
+          "type": "securestring",
+          "metadata": {
+            "description": "vSRX user password"
+          }
+        },
+        "vsrx-sshkey": {
+          "type": "string",
+          "metadata": {
+            "description": "vSRX user SSH rsa public key"
+          }
+        },
+        "vsrx-disk": {
+          "type": "string",
+          "metadata": {
+            "description": "vSRX disk name"
+          }
+        },
+        "vnet-prefix": {
+          "type": "string",
+          "metadata": {
+            "description": "Virtual network prefix"
+          }
+        },
+        "vnet-mgt-subnet-prefix": {
+          "type": "string",
+          "metadata": {
+            "description": "Management subnet prefix"
+          }
+        },
+        "vnet-west-subnet-prefix": {
+          "type": "string",
+          "metadata": {
+            "description": "West subnet prefix"
+          }
+        },
+        "vnet-east-subnet-prefix": {
+          "type": "string",
+          "metadata": {
+            "description": "East subnet prefix"
+          }
+        },
+        "vnet-north-subnet-prefix": {
+          "type": "string",
+          "metadata": {
+            "description": "North subnet prefix"
+          }
+        },
+        "vnet-south-subnet-prefix": {
+          "type": "string",
+          "metadata": {
+            "description": "South subnet prefix"
+          }
+        },
+        "ilb-front-end-ip": {
+          "type": "string",
+          "metadata": {
+            "description": "Internal load balancer front-end IP"
+          }
+        },
+        "customData": {
+          "type": "string",
+          "defaultValue": "echo customData",
+          "metadata" : { 
+            "description": "String passed down to the Virtual Machine."
+          }   
+        }
+    },
+
+    "variables": {
+      "vnetName": "myVnet",
+      "vnetID": "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]",
+      "vnetPrefix": "[parameters('vnet-prefix')]",
+
+      "subnetMgtName": "MGMT",
+      "subnetMgtID": "[concat(variables('vnetID'),'/subnets/',variables('subnetMgtName'))]",
+      "subnetMgtPrefix": "[parameters('vnet-mgt-subnet-prefix')]",
+
+      "subnetWestName": "WEST",
+      "subnetWestID": "[concat(variables('vnetID'),'/subnets/',variables('subnetWestName'))]",
+      "subnetWestPrefix": "[parameters('vnet-west-subnet-prefix')]",
+
+      "subnetEastName": "EAST",
+      "subnetEastID": "[concat(variables('vnetID'),'/subnets/',variables('subnetEastName'))]",
+      "subnetEastPrefix": "[parameters('vnet-east-subnet-prefix')]",
+
+      "subnetSouthName": "SOUTH",
+      "subnetSouthID": "[concat(variables('vnetID'),'/subnets/',variables('subnetSouthName'))]",
+      "subnetSouthPrefix": "[parameters('vnet-south-subnet-prefix')]",
+
+      "rttWestName": "MyRouteTable-West",
+      "rttEastName": "MyRouteTable-East",
+
+      "nsgName": "myNSG",
+      "nsgID": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgName'))]",
+
+      "ilbName": "internalLoadBalancer",
+      "ilbID": "[resourceId('Microsoft.Network/loadBalancers', variables('ilbName'))]",
+
+      "ilbFrontendName": "ilbFrontEnd",
+      "ilbFrontendIP": "[parameters('ilb-front-end-ip')]",
+      "ilbFrontendID": "[concat(variables('ilbID'),'/frontendIPConfigurations/',variables('ilbFrontendName'))]",
+
+      "ilbBAPoolName": "ilbBackEndPool",
+      "ilbBAPoolID": "[concat(variables('ilbID'),'/backendAddressPools/',variables('ilbBAPoolName'))]",
+
+      "ilbProbeName": "ilbHealthProbe",
+      "ilbProbeID": "[concat(variables('ilbID'),'/probes/',variables('ilbProbeName'))]",
+
+      "vsrxVM": {
+          "vmSize": "Standard_DS3_v2",
+          "publisher": "juniper-networks",
+          "offer": "vsrx-next-generation-firewall",
+          "sku": "vsrx-byol-azure-image",
+          "version": "latest",
+          "vmName": "[parameters('vsrx-name')]",
+          "baseDisk": "[concat('https://', parameters('storageAccountName'), '.blob.core.windows.net/', parameters('storageContainerName'), '/', parameters('vsrx-disk'))]"
+      },
+
+      "vmssName": "[concat(variables('vsrxVM').vmName,'ScaleSet')]",
+      "vmssID": "[resourceId('Microsoft.Compute/virtualMachineScaleSets', variables('vmssName'))]"
+    },
+
+    "resources": [
+        {
+            "type": "Microsoft.Storage/storageAccounts",
+            "name": "[parameters('storageAccountName')]",
+            "apiVersion": "2015-06-15",
+            "location": "[resourceGroup().location]",
+            "properties": {
+              "accountType": "Standard_LRS"
+            }
+        },
+        {
+           "apiVersion": "2016-03-30",
+           "type": "Microsoft.Network/virtualNetworks",
+           "name": "[variables('vnetName')]",
+           "location": "[resourceGroup().location]",
+           "dependsOn": [
+             "[concat('Microsoft.Network/routeTables/', variables('rttWestName'))]",
+             "[concat('Microsoft.Network/routeTables/', variables('rttEastName'))]"
+           ],
+           "properties": {
+             "addressSpace": {
+               "addressPrefixes": [
+                 "[variables('vnetPrefix')]"
+               ]
+             },
+             "subnets": [
+               {
+                 "name": "[variables('subnetMgtName')]",
+                 "properties": {
+                   "addressPrefix": "[variables('subnetMgtPrefix')]"
+                 }
+               },
+               {
+                 "name": "[variables('subnetSouthName')]",
+                 "properties": {
+                   "addressPrefix": "[variables('subnetSouthPrefix')]"
+                 }
+               },
+               {
+                 "name": "[variables('subnetWestName')]",
+                 "properties": {
+                     "addressPrefix": "[variables('subnetWestPrefix')]",
+                     "routeTable": {
+                         "id": "[resourceId('Microsoft.Network/routeTables', variables('rttWestName'))]"
+                     }
+                 }
+               },
+               {
+                 "name": "[variables('subnetEastName')]",
+                 "properties": {
+                     "addressPrefix": "[variables('subnetEastPrefix')]",
+                     "routeTable": {
+                         "id": "[resourceId('Microsoft.Network/routeTables', variables('rttEastName'))]"
+                     }
+                 }
+               }
+             ]
+           }
+        },
+        {
+            "apiVersion": "2015-06-15",
+            "type": "Microsoft.Network/routeTables",
+            "name": "[variables('rttWestName')]",
+            "location": "[resourceGroup().location]",
+            "tags": {
+              "displayName": "UDR - West End"
+            },
+            "properties": {
+              "routes": [
+                {
+                  "name": "RouteToEast",
+                  "properties": {
+                    "addressPrefix": "[variables('subnetEastPrefix')]",
+                    "nextHopType": "VirtualAppliance",
+                    "nextHopIpAddress": "[variables('ilbFrontendIP')]"
+                  }
+                }
+              ]
+            }
+        },
+        {
+            "apiVersion": "2015-06-15",
+            "type": "Microsoft.Network/routeTables",
+            "name": "[variables('rttEastName')]",
+            "location": "[resourceGroup().location]",
+            "tags": {
+              "displayName": "UDR - East End"
+            },
+            "properties": {
+              "routes": [
+                {
+                  "name": "RouteToWest",
+                  "properties": {
+                    "addressPrefix": "[variables('subnetWestPrefix')]",
+                    "nextHopType": "VirtualAppliance",
+                    "nextHopIpAddress": "[variables('ilbFrontendIP')]"
+                  }
+                }
+              ]
+            }
+        },
+        {
+            "apiVersion": "2019-09-01",
+            "type": "Microsoft.Network/loadBalancers",
+            "name": "[variables('ilbName')]",
+            "location": "[resourceGroup().location]",
+            "sku": {
+                "name": "Standard"
+            },
+            "dependsOn": [
+                "[concat('Microsoft.Network/virtualNetworks/', variables('vnetName'))]"
+            ],
+            "properties": {
+                "frontendIPConfigurations": [
+                    {
+                        "name": "[variables('ilbFrontendName')]",
+                        "properties": {
+                            "privateIPAddress": "[variables('ilbFrontendIP')]",
+                            "privateIPAllocationMethod": "Static",
+                            "subnet": {
+                                "id": "[variables('subnetSouthID')]"
+                            },
+                            "privateIPAddressVersion": "IPv4"
+                        }
+                    }
+                ],
+                "backendAddressPools": [
+                    {
+                        "name": "[variables('ilbBAPoolName')]",
+                        "properties": {}
+                    }
+                ],
+                "loadBalancingRules": [
+                    {
+                        "name": "ilbRule",
+                        "properties": {
+                            "frontendIPConfiguration": {
+                                "id": "[variables('ilbFrontendID')]"
+                            },
+                            "frontendPort": 0,
+                            "backendPort": 0,
+                            "enableFloatingIP": false,
+                            "idleTimeoutInMinutes": 4,
+                            "protocol": "All",
+                            "enableTcpReset": false,
+                            "loadDistribution": "Default",
+                            "disableOutboundSnat": false,
+                            "backendAddressPool": {
+                                "id": "[variables('ilbBAPoolID')]"
+                            },
+                            "probe": {
+                                "id": "[variables('ilbProbeID')]"
+                            }
+                        }
+                    }
+                ],
+                "probes": [
+                    {
+                        "name": "[variables('ilbProbeName')]",
+                        "properties": {
+                            "protocol": "Tcp",
+                            "port": 22,
+                            "intervalInSeconds": 15,
+                            "numberOfProbes": 2
+                        }
+                    }
+                ],
+                "inboundNatRules": [],
+                "outboundRules": [],
+                "inboundNatPools": []
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2019-09-01",
+            "name": "[variables('nsgName')]",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "allow-ssh",
+                        "properties": {
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "22",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 200,
+                            "direction": "Inbound"
+                        }
+                    },
+                    {
+                        "name": "allow-web",
+                        "properties": {
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 210,
+                            "direction": "Inbound",
+                            "destinationPortRanges": [
+                                "80",
+                                "443"
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        {
+          "type": "Microsoft.Compute/virtualMachineScaleSets",
+          "name": "[variables('vmssName')]",
+          "apiVersion": "2019-03-01",
+          "location": "[resourceGroup().location]",
+          "tags": "VSRX",
+          "dependsOn": [
+            "[concat('Microsoft.Network/virtualNetworks/', variables('vnetName'))]",
+            "[concat('Microsoft.Network/loadBalancers/', variables('ilbName'))]"
+          ],
+          "sku": {
+            "name": "[variables('vsrxVM').vmSize]",
+            "capacity": 2
+          },
+          "plan": {
+            "name": "[variables('vsrxVM').sku]",
+            "publisher": "[variables('vsrxVM').publisher]",
+            "product": "[variables('vsrxVM').offer]"
+          },
+          "properties": {
+            "upgradePolicy": {
+              "mode": "Manual"
+            },
+            "virtualMachineProfile": {
+              "osProfile": {
+                "computerNamePrefix": "vsrx",
+                "adminUsername": "[parameters('vsrx-username')]",
+                "adminPassword": "[parameters('vsrx-password')]",
+                "linuxConfiguration": {
+                  "disablePasswordAuthentication": false
+                }
+              },
+              "storageProfile": {
+                "imageReference": {
+                  "publisher": "[variables('vsrxVM').publisher]",
+                  "offer": "[variables('vsrxVM').offer]",
+                  "sku": "[variables('vsrxVM').sku]",
+                  "version": "[variables('vsrxVM').version]"
+                },
+                "osDisk": {
+                  "osType": "Linux",
+                  "name": "[concat(variables('vsrxVM').vmName, '-Disk')]",
+                  "caching": "ReadWrite",
+                  "createOption": "FromImage"
+                }
+              },
+              "networkProfile": {
+                "networkInterfaceConfigurations": [
+                  {
+                    "name": "myNic1",
+                    "properties": {
+                      "primary": "true",
+                      "enableAcceleratedNetworking": "false",
+                      "networkSecurityGroup": {
+                        "id": "[variables('nsgID')]"
+                      },
+                      "ipConfigurations": [
+                        {
+                          "name": "myIpConfig1",
+                          "properties": {
+                            "subnet": {
+                              "id": "[variables('subnetMgtID')]"
+                            },
+                            "publicipaddressconfiguration": {
+                              "name": "pub1",
+                              "properties": {
+                                "idleTimeoutInMinutes": 15
+                              }
+                            }
+                          }
+                        }
+                      ],
+                      "enableIPForwarding": false
+                    }
+                  },
+                  {
+                    "name": "myNic2",
+                    "properties": {
+                      "primary": "false",
+                      "enableAcceleratedNetworking": "false",
+                      "networkSecurityGroup": {
+                        "id": "[variables('nsgID')]"
+                      },
+                      "ipConfigurations": [
+                        {
+                          "name": "myIpConfig2",
+                          "properties": {
+                            "subnet": {
+                              "id": "[variables('subnetSouthID')]"
+                            },
+                            "loadBalancerBackendAddressPools": [
+                              {
+                                "id": "[variables('ilbBAPoolID')]"
+                              }
+                            ]
+                          }
+                        }
+                      ],
+                      "enableIPForwarding": true
+                    }
+                  }
+                ]
+              }
+
+            },
+            "overprovision": "false"
+          }
+        },
+        {
+          "type": "Microsoft.Insights/autoscaleSettings",
+          "apiVersion": "2015-04-01",
+          "name": "Autoscale",
+          "location": "[resourceGroup().location]",
+          "dependsOn": [
+            "[concat('Microsoft.Compute/virtualMachineScaleSets/', variables('vmssName'))]"
+          ],
+          "properties": {
+            "name": "Autoscale",
+            "targetResourceUri": "[variables('vmssID')]",
+            "enabled": true,
+            "profiles": [
+              {
+                "name": "Autoscale by percentage based on CPU usage",
+                "capacity": {
+                  "minimum": "2",
+                  "maximum": "5",
+                  "default": "2"
+                },
+                "rules": [
+                  {
+                    "metricTrigger": {
+                      "metricName": "Percentage CPU",
+                      "metricNamespace": "",
+                      "metricResourceUri": "[variables('vmssID')]",
+                      "timeGrain": "PT1M",
+                      "statistic": "Average",
+                      "timeWindow": "PT5M",
+                      "timeAggregation": "Average",
+                      "operator": "GreaterThan",
+                      "threshold": 70
+                    },
+                    "scaleAction": {
+                      "direction": "Increase",
+                      "type": "ChangeCount",
+                      "value": "3",
+                      "cooldown": "PT5M"
+                    }
+                  },
+                  {
+                    "metricTrigger": {
+                      "metricName": "Percentage CPU",
+                      "metricNamespace": "",
+                      "metricResourceUri": "[variables('vmssID')]",
+                      "timeGrain": "PT1M",
+                      "statistic": "Average",
+                      "timeWindow": "PT5M",
+                      "timeAggregation": "Average",
+                      "operator": "LessThan",
+                      "threshold": 30
+                    },
+                    "scaleAction": {
+                      "direction": "Decrease",
+                      "type": "ChangeCount",
+                      "value": "1",
+                      "cooldown": "PT5M"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+    ]
+}
