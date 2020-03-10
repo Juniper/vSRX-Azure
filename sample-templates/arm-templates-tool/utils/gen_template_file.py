@@ -20,17 +20,16 @@ if len(args) < 2:
 src_file = args[0]
 dst_file = args[1]
 
-with open(src_file) as data_file:    
-    data = json.load(data_file)
-try:
-    vm = filter(lambda x: x['type'] == 'Microsoft.Compute/virtualMachines', data['resources'])
-    # There is only one virtual machine, i.e. vsrx
-    vsrx = vm[0]
+def vsrx_update_profile(vsrx, vsrx_in_vmss = False):
+    if vsrx_in_vmss:
+        properties = vsrx['properties']['virtualMachineProfile']
+    else:
+        properties = vsrx['properties']
 
     if options.image_flag:
         vsrx.pop('plan', None)
-        vsrx['properties']['storageProfile'].pop('imageReference', None)
-        vsrx['properties']['storageProfile']['osDisk']['image'] = { "uri": "[variables('vsrxVM').baseDisk]" }
+        properties['storageProfile'].pop('imageReference', None)
+        properties['storageProfile']['osDisk']['image'] = { "uri": "[variables('vsrxVM').baseDisk]" }
 
     if options.publickey_flag:
         publickey_json = '''
@@ -43,12 +42,26 @@ try:
                     ]
                   }
         '''
-        vsrx['properties']['osProfile'].pop('adminPassword', None)
-        vsrx['properties']['osProfile']['linuxConfiguration']['disablePasswordAuthentication'] = 'true'
-        vsrx['properties']['osProfile']['linuxConfiguration']['ssh'] = json.loads(publickey_json)
+        properties['osProfile'].pop('adminPassword', None)
+        properties['osProfile']['linuxConfiguration']['disablePasswordAuthentication'] = 'true'
+        properties['osProfile']['linuxConfiguration']['ssh'] = json.loads(publickey_json)
 
     if options.customdata_flag:
-        vsrx['properties']['osProfile']['customData'] = "[base64(parameters('customData'))]"
+        properties['osProfile']['customData'] = "[base64(parameters('customData'))]"
+
+
+with open(src_file) as data_file:    
+    data = json.load(data_file)
+try:
+    vm = filter(lambda x: x['type'] == 'Microsoft.Compute/virtualMachines' and 
+                          x['name'].find("vsrx") >= 0, data['resources'])
+    for vsrx in vm:
+        vsrx_update_profile(vsrx)
+
+    vm = filter(lambda x: x['type'] == 'Microsoft.Compute/virtualMachineScaleSets',
+                          data['resources'])
+    for vsrx in vm:
+        vsrx_update_profile(vsrx, True)
 
 except:
     sys.stderr.write('cannot change template file\n')
