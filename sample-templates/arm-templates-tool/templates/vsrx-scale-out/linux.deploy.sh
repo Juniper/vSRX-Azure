@@ -62,6 +62,14 @@ eof
 AZURE_CMD_PARAM+=" --custom-data $CLOUD_INIT_FILE" 
 }
 
+quit()
+{
+    if [ -f $CLOUD_INIT_FILE ]; then
+        rm -f $CLOUD_INIT_FILE
+    fi
+    exit $1
+}
+
 while [ $# -gt 0 ]
 do
     case $1 in
@@ -70,7 +78,7 @@ do
         ;;
         -h|--help)
         usage
-        exit 0
+        quit 0
         ;;
         *)
         break
@@ -83,43 +91,57 @@ if [ $# -gt 0 ]; then
     GROUP_NAME=$1
 else
     usage
-    exit 1
+    quit 1
 fi
+
+LOCATION=`azure group list | grep -w $GROUP_NAME | awk '{printf $3}'`
+if [ -z $LOCATION ]; then
+    echo "Azure resource group $GROUP_NAME not found!"
+    quit 1
+fi
+
+ACCOUNT=`azure storage account list | grep -w $GROUP_NAME | awk '{print $2}'`
 
 # Create NICs
-az network nic create \
+azure network nic create \
     --resource-group $GROUP_NAME \
+    --location $LOCATION \
     --name myNicWest \
-    --vnet-name myVnet \
-    --subnet WEST \
-    --network-security-group myNSG \
+    --subnet-vnet-name myVnet \
+    --subnet-name WEST \
+    --network-security-group-name myNSG \
 
-az network nic create \
+azure network nic create \
     --resource-group $GROUP_NAME \
+    --location $LOCATION \
     --name myNicEast \
-    --vnet-name myVnet \
-    --subnet EAST \
-    --network-security-group myNSG \
+    --subnet-vnet-name myVnet \
+    --subnet-name EAST \
+    --network-security-group-name myNSG \
 
 # Create backend servers
- az vm create \
+azure vm create \
    --resource-group $GROUP_NAME \
+   --location $LOCATION \
    --name myVMwest\
-   --nics myNicWest\
-   --image UbuntuLTS \
+   --nic-name myNicWest\
+   --storage-account-name $ACCOUNT \
+   --os-type Linux --image-urn Canonical:UbuntuServer:18.04-LTS:latest \
+   --disable-boot-diagnostics \
    --admin-username demo --admin-password Demo123456@@ \
    --generate-ssh-keys \
-   $AZURE_CMD_PARAM --no-wait
+   $AZURE_CMD_PARAM
 
- az vm create \
+azure vm create \
    --resource-group $GROUP_NAME \
+   --location $LOCATION \
    --name myVMeast\
-   --nics myNicEast\
-   --image UbuntuLTS \
+   --nic-name myNicEast\
+   --storage-account-name $ACCOUNT \
+   --os-type Linux --image-urn Canonical:UbuntuServer:18.04-LTS:latest \
+   --disable-boot-diagnostics \
    --admin-username demo --admin-password Demo123456@@ \
    --generate-ssh-keys \
-   $AZURE_CMD_PARAM --no-wait
+   $AZURE_CMD_PARAM
 
-if [ -f $CLOUD_INIT_FILE ]; then
-    rm -f $CLOUD_INIT_FILE
-fi
+quit 0
