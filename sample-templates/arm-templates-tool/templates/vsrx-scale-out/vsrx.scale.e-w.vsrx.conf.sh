@@ -1,3 +1,6 @@
+#!/bin/sh
+# Generate vsrx configuration for east-west use case
+
 parameter_file="./templates/vsrx-scale-out/vsrx.scale.parameters.json"
 
 LB_PROBE_IP=168.63.129.16

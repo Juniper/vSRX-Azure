@@ -1,3 +1,6 @@
+#!/bin/sh
+# Generate vsrx configuration for sourth-north use case
+
 parameter_file="./templates/vsrx-scale-out/vsrx.scale.parameters.json"
 
 # Temp fake IP, replace it with real pLB public IP after booting up
