@@ -342,7 +342,9 @@
           "name": "[variables('vsrxVM').vmName]",
           "type": "Microsoft.Compute/virtualMachines",
           "location": "[resourceGroup().location]",
-          "tags": "VSRX",
+          "tags": {
+            "nva": "VSRX"
+          },
            "dependsOn": [
              "[concat('Microsoft.Network/networkInterfaces/', variables('vsrxVM').mgtNicName)]",
              "[concat('Microsoft.Network/networkInterfaces/', variables('vsrxVM').untrustNicName)]",
