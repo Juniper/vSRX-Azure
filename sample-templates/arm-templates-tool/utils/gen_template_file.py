@@ -54,12 +54,12 @@ with open(src_file) as data_file:
     data = json.load(data_file)
 try:
     vm = filter(lambda x: x['type'] == 'Microsoft.Compute/virtualMachines' and 
-                          x['tags'] == "VSRX", data['resources'])
+                          x.has_key('tags') and x['tags'].get('nva') == "VSRX", data['resources'])
     for vsrx in vm:
         vsrx_update_profile(vsrx)
 
-    vm = filter(lambda x: x['type'] == 'Microsoft.Compute/virtualMachineScaleSets',
-                          x['tags'] == "VSRX", data['resources'])
+    vm = filter(lambda x: x['type'] == 'Microsoft.Compute/virtualMachineScaleSets' and
+                          x.has_key('tags') and x['tags'].get('nva') == "VSRX", data['resources'])
     for vsrx in vm:
         vsrx_update_profile(vsrx, True)
 
