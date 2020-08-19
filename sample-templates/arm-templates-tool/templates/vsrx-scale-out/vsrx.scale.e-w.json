@@ -405,7 +405,6 @@
                 },
                 "osDisk": {
                   "osType": "Linux",
-                  "name": "[concat(variables('vsrxVM').vmName, '-Disk')]",
                   "caching": "ReadWrite",
                   "createOption": "FromImage"
                 }

@@ -29,6 +29,7 @@ def vsrx_update_profile(vsrx, vsrx_in_vmss = False):
     if options.image_flag:
         vsrx.pop('plan', None)
         properties['storageProfile'].pop('imageReference', None)
+        properties['storageProfile']['osDisk']['name'] = "[concat(variables('vsrxVM').vmName, '-Disk')]"
         properties['storageProfile']['osDisk']['image'] = { "uri": "[variables('vsrxVM').baseDisk]" }
 
     if options.publickey_flag:
