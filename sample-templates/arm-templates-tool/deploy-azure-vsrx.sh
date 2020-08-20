@@ -100,8 +100,6 @@ if [ "$customdata_file" ]
 then
     test "$customdata_raw" && error "customdata file and raw file cannot be used at the same time"
     test -f "$customdata_file" || error "custom data file $customdata_file does not exist"
-    # Get the absolute path of the customdata file
-    customdata_file=`readlink -f ${customdata_file}`
     gen_param_cmd_param+=' -c '"$customdata_file"
     gen_template_cmd_param+=' -c'
 fi
@@ -110,8 +108,6 @@ if [ "$customdata_raw" ]
 then
     test "$customdata_file" && error "customdata file and raw file cannot be used at the same time"
     test -f "$customdata_raw" || error "custom data raw file $customdata_raw does not exist"
-    # Get the absolute path of the customdata file
-    customdata_raw=`readlink -f ${customdata_raw}`
     gen_param_cmd_param+=' -r '"$customdata_raw"
     gen_template_cmd_param+=' -c'
 fi
@@ -219,7 +215,9 @@ if [ ! -z "$gen_template_cmd_param" ]; then
     deploy_parameters="$tmp_parameter_file"
     deploy_template="$tmp_template_file"
     $prog_dir/utils/gen_param_file.py $gen_param_cmd_param "$parameter_file" "$tmp_parameter_file"
+    [ $? -ne 0 ] && error "fails to run gen_param_file.py!"
     $prog_dir/utils/gen_template_file.py $gen_template_cmd_param "$template_file" "$tmp_template_file" 
+    [ $? -ne 0 ] && error "fails to run gen_template_file.py!"
 fi
 
 azure group template validate -f "$deploy_template" -e "$deploy_parameters" -g "$resource_group"
