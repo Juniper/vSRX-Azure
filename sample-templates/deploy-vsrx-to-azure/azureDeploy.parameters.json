@@ -26,6 +26,9 @@
     "vsrx-password": {
       "value": "Demo123456"
     },
+    "vsrx-sshkey": {
+      "value": "ssh-rsa placeholder"
+    },
     "vnet-name": {
       "value": "vsrx-vnet"
     },
