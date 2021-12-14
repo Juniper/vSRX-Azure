@@ -66,6 +66,12 @@
             "description": "vSRX user password"
           }
         },
+        "vsrx-sshkey": {
+          "type": "string",
+          "metadata": {
+            "description": "vSRX user SSH rsa public key"
+          }
+        },
         "vnet-name": {
           "type": "string",
           "metadata": {
