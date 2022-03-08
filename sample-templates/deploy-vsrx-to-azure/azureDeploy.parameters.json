@@ -5,7 +5,7 @@
     "storageAccountName": {
       "value": "jnstorage"
     },
-    "vSRX-model": {
+    "vSRX-models": {
       "value": "PAYG - w/Anti Virus"
     },
     "virtualMachineSize": {
